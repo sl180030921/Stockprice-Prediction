@@ -1,60 +1,23 @@
-from flask import Flask, request, render_template_string
-import yfinance as yf
+from flask import Flask, request, render_template
 import numpy as np
+from tensorflow.keras.models import load_model  # Use Keras load_model for .h5 files
 
-# Initialize the Flask application
+# Load the pre-trained model
+model = load_model("best_stock_model.h5")
+
 app = Flask(__name__)
 
-# Define the HTML template
-HTML_TEMPLATE = """
-<!doctype html>
-<html lang="en">
-  <head>
-    <title>Stock Price Prediction</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 2em; }
-      form { margin-bottom: 1em; }
-      input[type=text] { padding: 0.5em; }
-      input[type=submit] { padding: 0.5em; cursor: pointer; }
-    </style>
-  </head>
-  <body>
-    <h1>Stock Price Prediction</h1>
-    <form method="post">
-      <label for="ticker">Enter Stock Ticker:</label>
-      <input type="text" id="ticker" name="ticker" required>
-      <input type="submit" value="Predict">
-    </form>
-    {% if prediction %}
-      <h3>Predicted Price for {{ ticker }}: ${{ prediction }}</h3>
-    {% endif %}
-  </body>
-</html>
-"""
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-@app.route("/", methods=["GET", "POST"])
-def predict_stock():
-    prediction = None
-    ticker = None
+@app.route('/predict', methods=['POST'])
+def predict():
+    stock_ticker = request.form.get('ticker')
+    
+    # Here, add code to fetch data for `stock_ticker`, preprocess, and make predictions
+    prediction = np.random.random()  # Placeholder for actual model prediction
+    return render_template('index.html', prediction_text=f'Predicted Price for {stock_ticker}: {prediction}')
 
-    if request.method == "POST":
-        ticker = request.form["ticker"]
-        
-        # Fetch historical data for the ticker using yfinance
-        try:
-            data = yf.download(ticker, period="5d")
-            if data.empty:
-                prediction = "Ticker not found or no data available."
-            else:
-                # Use the last available close price and simulate a prediction
-                last_close = data['Close'].iloc[-1]
-                prediction = round(last_close * np.random.uniform(0.95, 1.05), 2)
-        except Exception as e:
-            prediction = f"Error: {str(e)}"
-
-    # Render HTML with prediction
-    return render_template_string(HTML_TEMPLATE, prediction=prediction, ticker=ticker)
-
-# Run the Flask app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(debug=True)
